@@ -1,7 +1,10 @@
-from survey.elements import *
+# @Time : 2021/4/18 
+# @Author : xiaorik
+
+from core.elements import *
 
 
-class Survey(object):
+class WebPage(object):
     def __init__(self, page: Page):
         self.page = page
 

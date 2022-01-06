@@ -1,50 +1,28 @@
+# @Time : 2021/4/18 
+# @Author : xiaorik
+
 from playwright.sync_api import Page, ElementHandle
 import sys
-import logging
+import time
+from utils.logger import logger
 from typing import List
+
 if sys.version_info >= (3, 8):  # pragma: no cover
     from typing import Literal
 else:  # pragma: no cover
     from typing_extensions import Literal
 
-logger = logging.getLogger("test")
-
-
 s = lambda page, selector: page.query_selector(selector)
 ss = lambda page, selector: page.query_selector_all(selector)
 
-
 '''
-Lazy Element Functions
------------------------------
-This functions returns wrapped elements in the moment
-when it is called in the page object.
-usage example:
-
-class MyPageObject:
-    # 1. Returns wrapped element by slector value
-    def my_element(self): return el(self.page, selector='css=*[type="email"]') 
-    
-    # 2. Returns wrapped element by element value
-    def my_element(self): return el(self.page, el=<element_handle>) 
-    
-    # 3. Returns elements_collection object which keeps the list of elements_handles
-    # and introduces interface for working with elements collections(size, index, texts, sorting, etc..)
-    def my_elements_collection(self): return els(self.page, selector='.my-container .article') 
-
-    # 4. Returns elements_collection object which keeps element objects like:
-    #   * WebElement
-    #   * PageObjectContainer(WebElement)
-    # Introduces interface for working with elements collections(size, index, texts, sorting, etc..)
-    def my_web_elements_collection(self): return elc(self.page, selector='.my-container .article', element_container=WebElement) 
-    def my_page_objects_collection(self): return els(self.page, selector='.my-container .article', element_container=main_page.Article) 
-
+Lazy Element Functions: https://jelv.is/blog/Lazy-Dynamic-Programming/
 '''
 el = lambda page, selector=None, element=None: WebElement(page, selector, element)
 els = lambda page, selector: WebElements(page, selector)
 elc = lambda page, elements, element_container: WebElementsCollection(page, elements, element_container)
 
-
+# refer to this page: https://playwright.dev/python/docs/api/class-elementhandle
 class WebElement:
 
     def __init__(self, page: Page, selector: str = None, element: ElementHandle = None):
@@ -56,7 +34,9 @@ class WebElement:
             self.selector = None
             self.element: ElementHandle = element
         else:
-            raise Exception(f"Element or Selector is not defined. Please enter arguments: 'selector=<str>' or 'element=<ElementHandle>'")
+            raise Exception(
+                f"Element or Selector is not defined. \
+                Please enter arguments: 'selector=<str>' or 'element=<ElementHandle>'")
 
     def set_value(self, text):
         if self.selector is None:
@@ -83,6 +63,16 @@ class WebElement:
             self.element.click()
         else:
             self.page.click(self.selector)
+        time.sleep(1)
+        self.page.wait_for_load_state()
+        return self
+
+    def hover(self):
+        if self.selector is None:
+            self.element.hover()
+        else:
+            self.page.hover(self.selector)
+            time.sleep(0.1)
         return self
 
     def should_be_visible(self):
@@ -139,6 +129,12 @@ class WebElement:
         self.page.keyboard.press('Enter')
         return self
 
+    def get_property(self, type):
+        # obtain property value by type
+        # type like background_color etc.,
+        self.page.get_attribute(type)
+        return self
+
     def inner_text(self):
         if self.selector is None:
             self.element.wait_for_element_state(state="visible")
@@ -151,9 +147,14 @@ class WebElement:
                          block: Literal["start", "center", "end", "nearest"] = "center",
                          inline: Literal["start", "center", "end", "nearest"] = "nearest"):
         if self.selector is None:
-            return self.element.evaluate(expression='''el => { el.scrollIntoView({behavior: \"%s\", block: \"%s\", inline: \"%s\"}); }''' % (behavior, block, inline))
+            return self.element.evaluate(
+                expression='''el => { el.scrollIntoView({behavior: \"%s\", block: \"%s\", inline: \"%s\"}); }''' % (
+                    behavior, block, inline))
         else:
-            self.page.eval_on_selector(self.selector, expression='''(el) => { el.scrollIntoView({behavior: \"%s\", block: \"%s\", inline: \"%s\"}); }''' % (behavior, block, inline))
+            self.page.eval_on_selector(self.selector,
+                                       expression='''(el) => { el.scrollIntoView(\
+                                       {behavior: \"%s\", block: \"%s\", inline: \"%s\"}); }''' % (
+                                           behavior, block, inline))
         return self
 
     def scroll_into_view_if_needed(self):
@@ -198,11 +199,12 @@ class WebElementsCollection:
         return len(self.elements)
 
     def get(self, index):
-        # logger.info(self.container_class) # expected output: <class 'pages.main_page.main_page.Article'>
+        # logger.info(self.container_class) # expected output: <class 'pages.main_page.main_page.survey'>
         return self.container_class(page=self.page, element=self.elements[index])
 
     def get_inner_texts(self):
         def el_text(el: ElementHandle):
             return el.inner_text()
+
         texts = list(map(el_text, self.elements))
         return texts
