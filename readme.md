@@ -32,6 +32,8 @@ xx的工程在 xxxx 目录里面，其他的工程可以放到同一级目录下
 2. playwright-pytest
 3. [Pillow、pixelmatch](https://pypi.org/project/pixelmatch/)
 
+`Playwright` 是一个CS架构，具体可以参考[这篇文章](https://yrq110.me/post/front-end/dive-into-playwright/)
+，通过Connection 与Client 通信，收发消息执行对应的自动化操作。看完上面这篇文章对写自动化有非常好的理解，比如什么是Browser、Page。
 
 ## 如何执行
 
